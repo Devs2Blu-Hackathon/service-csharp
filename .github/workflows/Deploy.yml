@@ -52,8 +52,16 @@ jobs:
 
       - name: 📥 Download Task Definition
         run: |
-          aws ecs describe-task-definition --task-definition ${{ env.ECS_SERVICE }}-task-hackathon \
-          --query taskDefinition > task-definition.json
+          # Baixa a task definition atual
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_SERVICE }}-task-hackathon \
+            --query "taskDefinition" > task-definition-raw.json
+
+          # Remove o campo enableFaultInjection que a action antiga não conhece
+          jq 'del(.enableFaultInjection)' task-definition-raw.json > task-definition.json
+
+          echo "Task definition final usada no deploy:"
+          cat task-definition.json
 
       - name: 📝 Update Task Definition
         id: task-def
@@ -69,4 +77,4 @@ jobs:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true 
+          wait-for-service-stability: true
